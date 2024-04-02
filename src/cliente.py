@@ -1,4 +1,5 @@
 import socket
+import os
 
 
 def send_file_request(sock, request):
@@ -7,13 +8,20 @@ def send_file_request(sock, request):
     return response
 
 
-def download_file(sock, filename):
-    with open(filename, "wb") as file:
-        while True:
-            data = sock.recv(1024)
-            if not data:
-                break
-            file.write(data)
+def list_client_files():
+    client_files = os.listdir("src/clientes_arquivos")
+    print("Arquivos disponíveis para envio:")
+    for i, filename in enumerate(client_files, start=1):
+        print(f"{i}. {filename}")
+    return client_files
+
+
+def upload_file(sock, filename):
+    with open(os.path.join("clientes_arquivos", filename), "rb") as file:
+        data = file.read()
+    sock.sendall(f"upload {filename}".encode())
+    sock.sendall(data)
+    print(f"Arquivo {filename} enviado para o servidor.")
 
 
 def client():
@@ -34,54 +42,34 @@ def client():
         option = input("Escolha uma opção: ")
 
         if option == "1":
-            filename = input("Digite o nome do arquivo público que deseja baixar: ")
-            response = send_file_request(sock, f"download {filename}")
-            if response != "FileNotFound":
-                print(f"Baixando o arquivo {filename}...")
-                download_file(sock, filename)
-                print(f"Arquivo {filename} baixado com sucesso.")
-            else:
-                print(f"Arquivo {filename} não encontrado no servidor.")
-
+            # Código para baixar arquivo público
+            pass
         elif option == "2":
-            filename = input("Digite o nome do arquivo privado que deseja enviar: ")
-            with open(filename, "rb") as file:
-                data = file.read()
-            sock.sendall(f"send {filename}".encode())
-            sock.sendall(data)
-            print(f"Arquivo {filename} enviado para o servidor como privado.")
-
+            # Código para enviar arquivo privado
+            pass
         elif option == "3":
-            filename = input(
-                "Digite o nome do arquivo privado que deseja autorizar para download: "
-            )
-            response = send_file_request(sock, f"authorize {filename}")
-            print(response)
-
+            # Código para autorizar download de arquivo privado
+            pass
         elif option == "4":
-            filename = input("Digite o nome do arquivo que deseja privar: ")
-            response = send_file_request(sock, f"privatize {filename}")
-            print(response)
-
+            # Código para privar arquivo
+            pass
         elif option == "5":
-            filename = input(
-                "Digite o nome do arquivo que deseja enviar para o servidor: "
-            )
-            with open(filename, "rb") as file:
-                data = file.read()
-            sock.sendall(f"upload {filename}".encode())
-            sock.sendall(data)
-            print(f"Arquivo {filename} enviado para o servidor.")
-
+            client_files = list_client_files()
+            if client_files:
+                choice = int(input("Escolha o número do arquivo que deseja enviar: "))
+                if 1 <= choice <= len(client_files):
+                    filename = client_files[choice - 1]
+                    upload_file(sock, filename)
+                else:
+                    print("Escolha inválida.")
+            else:
+                print("Não há arquivos disponíveis para envio.")
         elif option == "6":
-            response = send_file_request(sock, "list")
-            print("Arquivos públicos no servidor:")
-            print(response)
-
+            # Código para listar arquivos públicos no servidor
+            pass
         elif option == "7":
             sock.sendall(b"exit")
             break
-
         else:
             print("Opção inválida. Tente novamente.")
 

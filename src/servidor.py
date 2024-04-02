@@ -14,7 +14,7 @@ def send_file(conn, filename):
 
 
 def list_files(conn):
-    files = os.listdir("arquivos")
+    files = os.listdir("src/arquivos")
     file_list = "\n".join(files)
     conn.sendall(file_list.encode())
 
@@ -40,12 +40,13 @@ def handle_client(conn, addr):
             list_files(conn)
         elif request.startswith("upload"):
             _, filename = request.split()
-            with open(os.path.join("arquivos", filename), "wb") as file:
+            with open(os.path.join("src/arquivos", filename), "wb") as file:
                 data = conn.recv(1024)
                 while data:
                     file.write(data)
                     data = conn.recv(1024)
             print(f"Arquivo {filename} recebido e salvo com sucesso.")
+            conn.sendall(b"FileUploaded")
     conn.close()
     print(f"Conexão encerrada com {addr}")
 
@@ -58,7 +59,7 @@ def start_server(host, port):
 
     # Listar os arquivos ao iniciar o servidor
     print("Arquivos no servidor:")
-    files = os.listdir("arquivos")
+    files = os.listdir("src/arquivos")
     for file in files:
         print(file)
 
