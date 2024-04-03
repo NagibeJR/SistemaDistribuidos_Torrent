@@ -1,23 +1,22 @@
 import socket
 import os
+from termcolor import colored
 
-
-def send_file(conn, filename):
-    try:
-        with open(filename, "rb") as file:
-            data = file.read()
-            conn.sendall(data)
-        print(f"Arquivo {filename} enviado com sucesso.")
-    except FileNotFoundError:
-        print(f"Arquivo {filename} não encontrado.")
-        conn.sendall(b"FileNotFound")
-
-
+# lista todos os arquivos do servidor
 def list_files(conn):
-    files = os.listdir("src/arquivos")
+    files = os.listdir("src/Arquivos")
     file_list = "\n".join(files)
     conn.sendall(file_list.encode())
 
+
+
+def send_file(conn, filename):
+    with open(filename, 'rb') as file:
+        for data in file.readlines():
+            conn.send(data)
+        print('arquivo enviado')
+
+## servidor principal host 
 
 def handle_client(conn, addr):
     print(f"Conexão estabelecida com {addr}")
@@ -27,26 +26,19 @@ def handle_client(conn, addr):
             break
         if request == "exit":
             break
-        elif request.startswith("download"):
+        elif request == "download":
             _, filename = request.split()
-            if os.path.isfile(filename):
-                if filename.startswith("privado"):
-                    conn.sendall(b"PrivateRequest")
-                else:
-                    send_file(conn, filename)
-            else:
-                conn.sendall(b"FileNotFound")
+            send_file(conn, filename)
         elif request == "list":
             list_files(conn)
         elif request.startswith("upload"):
             _, filename = request.split()
-            with open(os.path.join("src/arquivos", filename), "wb") as file:
+            with open(os.path.join("arquivos", filename), "wb") as file:
                 data = conn.recv(1024)
                 while data:
                     file.write(data)
                     data = conn.recv(1024)
             print(f"Arquivo {filename} recebido e salvo com sucesso.")
-            conn.sendall(b"FileUploaded")
     conn.close()
     print(f"Conexão encerrada com {addr}")
 
@@ -55,13 +47,14 @@ def start_server(host, port):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
     server.listen(5)
-    print(f"Servidor escutando em {host}:{port}")
+    print(colored("Servidor escutando em {host}:{port}", "red"))
 
     # Listar os arquivos ao iniciar o servidor
-    print("Arquivos no servidor:")
-    files = os.listdir("src/arquivos")
+    print(colored("Arquivos no servidor:","green"))
+    files = os.listdir("src/Arquivos")
+    
     for file in files:
-        print(file)
+        print(colored(file,"light_magenta"))
 
     while True:
         conn, addr = server.accept()
