@@ -1,30 +1,54 @@
 import socket
 from termcolor import colored
 
-## sock passa o ip que quer conecatar no servidor e resquest para o tipo de dados que deseja receber tipo a lista de arquivos do servidor "List"
 def send_file_request(sock, request):
+    """
+    Lista os arquivos do servidor.
+    """
     sock.sendall(request.encode())
     response = sock.recv(1024).decode()
     return response
 
 
 def download_file(sock, filename):
-    with open(filename, "wb") as file:
-        while True:
-            data = sock.recv(1000000)
-            if not data:
-                break
-            file.write(data)
-    print('recebido')
-        
+    """
+    Baixa o arquivo do servidor para o cliente via socket.
+    """
+    try:
+        with open(filename, "wb") as file:
+            while True:
+                data = sock.recv(4096)  # Recebe 1KB de dados do servidor
+                if not data:
+                    break
+                file.write(data)
+        print(f"Arquivo '{filename}' recebido com sucesso.")
+        file.close()
+    except Exception as e:
+        print(f"Erro durante o download do arquivo '{filename}': {e}")
 
 
+def send_file(sock, filename):
+    """
+    Envia o arquivo do cliente para o servidor via socket.
+    """
+    try:
+        with open("arquivos - cliente/" + filename, "rb") as file:
+            for i in file.readlines():
+                sock.send(i)
+            print("Arquivo enviado com sucesso!")
+            file.close()
+    except FileNotFoundError:
+        print(f"Arquivo '{filename}' não encontrado.")
+    except Exception as e:
+        print(f"Ocorreu um erro ao enviar o arquivo: {e}")
+
+##imput do cliente
 def client():
     name = input("Digite seu nome: ")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("127.0.0.1", 12345))
+    sock.connect(("localhost", 57000))
     print("Conectado ao servidor.")
-
+    ##Opções disponiveis
     while True:
         print("\nOpções:")
         print("1. Baixar arquivo público")
@@ -34,30 +58,28 @@ def client():
         print("5. Listar arquivos públicos no servidor")
         print("6. Sair")
         option = input("Escolha uma opção: ")
-
         # baixar os arquivos do servidores
         if option == "1":
             response = send_file_request(sock, "list")
             print(colored("Arquivos públicos no servidor:", "magenta"))
             print(colored(response,'dark_grey'))
-
-
-
             filename = str(input("Digite o nome do arquivo público que deseja baixar: "))
             sock.send(f"download {filename}".encode())
-            print(sock.send)
-            download_file(sock, filename)
-            if response != "FileNotFound":
+
+            if response != "Arquivo nao encontrado.":
+                download_file(sock, filename)
                 print(f"Baixando o arquivo {filename}...")
                 print(f"Arquivo {filename} baixado com sucesso.")
             else:
                 print(f"Arquivo {filename} não encontrado no servidor.")
         # enviar um arquivo privado ou publico
         elif option == "2":
-            print("funcao e desenvolvimento")
+            filename = input("Digite o nome do arquivo que deseja enviar: ")
+            sock.send(f"receive {filename}".encode())
+            send_file(sock, filename)
         # opcao para autorizar o downalod de um arquivo
         elif option == "3":
-            print("funcao em desenvolvimento")
+            print("funcao e desenvolvimento")
         # opcao para bloquear um arquivo para torna publico
         elif option == "4":
             print("funcao em desenvolvimento")
@@ -66,13 +88,12 @@ def client():
             response = send_file_request(sock, "list")
             print("Arquivos públicos no servidor:")
             print(response)
-        #sair da conexao dos servidores de arquivos
+        # sair da conexao dos servidores de arquivos
         elif option == "6":
             sock.sendall(b"exit")
             break
         else:
             print("Opção inválida. Tente novamente.")
-
     sock.close()
     print("Conexão encerrada.")
 
