@@ -25,7 +25,7 @@ def download_file(sock, filename):
                     break
                 file.write(data)
         print(f"Arquivo '{filename}' recebido com sucesso.")
-        file.flush()
+        file.close()
     except Exception as e:
         print(f"Erro durante o download do arquivo '{filename}': {e}")
 
@@ -33,11 +33,10 @@ def download_file(sock, filename):
 def send_file(sock, filename):
     try:
         with open("arquivos - cliente/" + filename, "rb") as file:
-            for dado in file.readlines():
-                sock.send(dado)
+            for data in file.readlines():
+                sock.send(data)
             print("Arquivo enviado com sucesso!")
-            file.flush()
-
+        file.close()
     except FileNotFoundError:
         print(f"Arquivo '{filename}' não encontrado.")
     except Exception as e:
@@ -95,18 +94,11 @@ def client():
         option = input("Escolha uma opção: ")
         # baixar os arquivos do servidores
         if option == "1":
-            response = list_file(sock, "list")
-            print(colored("Arquivos públicos no servidor:", "magenta"))
-            print(colored(response,'dark_grey'))
             filename = input("Digite o nome do arquivo público que deseja baixar: ")
-            sock.send(f"download {filename}".encode())
-
-            if response != "Arquivo nao encontrado.":
-                download_file(sock, filename)
-                print(f"Baixando o arquivo {filename}...")
-                print(f"Arquivo {filename} baixado com sucesso.")
-            else:
-                print(f"Arquivo {filename} não encontrado no servidor.")
+            sock.send(f"send {filename}".encode())
+            download_file(sock, filename)
+            print(f"Baixando o arquivo {filename}...")
+            print(f"Arquivo {filename} baixado com sucesso.")
         # enviar um arquivo privado ou publico
         elif option == "2":
             filename = input("Digite o nome do arquivo que deseja enviar: ")
@@ -131,7 +123,6 @@ def client():
             print("Opção inválida. Tente novamente.")
     sock.close()
     print("Conexão encerrada.")
-
 
 if __name__ == "__main__":
     client()

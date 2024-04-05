@@ -45,13 +45,10 @@ def list_files(conn):
 def send_file(conn, filename):
     try:
         with open("arquivos - servidor/" + filename, "rb") as file:
-            for dado in file.readlines():
-                conn.send(dado)
-        print('Arquivo enviado:', filename)
-        file.flush()
-        conn.send(b"Arquivo enviado com sucesso!")  # Envia mensagem de confirmação para o cliente
+            for data in file.readlines():
+                conn.send(data)
+            print("Arquivo enviado:", filename)
     except FileNotFoundError:
-        print('Arquivo não encontrado:', filename)
         conn.send(b"Arquivo nao encontrado.")
     except Exception as e:
         print(f"Ocorreu um erro ao enviar o arquivo: {e}")
@@ -112,6 +109,8 @@ def start_server(host, port):
     server.listen(5)
     print(colored("Servidor escutando em {host}:{port}", "red"))
 
+
+def hub_server(server):
     # Listar os arquivos ao iniciar o servidor
     print(colored("Arquivos no servidor:","green"))
     files = os.listdir("src/arquivos - servidor")
@@ -121,10 +120,31 @@ def start_server(host, port):
 
     while True:
         conn, addr = server.accept()
-        handle_client(conn, addr)
+        print(f"Conexão estabelecida com {addr}")
 
+        try:
+            
+                request = conn.recv(1024).decode()
+                
+                if not request:
+                    break
+                elif request == "exit" or request == "list":
+                    if request == "exit":
+                        break
+                    elif request == "list":
+                        list_files(conn)
+                else:
+                    codigo, filename = request.split()
+                    if codigo == "send":
+                        send_file(conn, filename)
+                        conn.close()
+                    elif codigo == "upload":
+                        receive_file(conn, filename)
+        except ConnectionResetError:
+            print("Conexão fechada pelo cliente.")
+        finally:
+            conn.close()
+            print(f"Conexão encerrada com {addr}")
 
 if __name__ == "__main__":
-    HOST = "localhost"
-    PORT = 57000
-    start_server(HOST, PORT)
+    server()
