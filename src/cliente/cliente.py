@@ -1,18 +1,23 @@
 import socket
 from termcolor import colored
 import json
+
+# envio das informacoes do usuario
+def send_user(sock, user_data,option):
+    if option =='1':
+        option = 'login'
+    else:
+        option = 'register'
+    data = json.dumps(user_data)
+    response = sock.send(f"{option} {data}".encode())
+    return response
     
-    
+
 #Lista os arquivos do servidor.
-def send_file_request(sock, request):
+def list_file(sock, request):
     sock.sendall(request.encode())
     response = sock.recv(1024).decode()
     return response
-
-
-def send_user(sock, user_data):
-    data = json.dumps(user_data)
-    sock.sendall(data.encode())
 
 
 #Baixa o arquivo do servidor para o cliente via socket.
@@ -52,6 +57,7 @@ def client():
     print("1- Fazer login")
     print("2- cadastra usuario")
 
+
     while True:
         option = input("Escolha a opcao: ")
 
@@ -59,6 +65,7 @@ def client():
             email = input("email: ")
             senha = input("senha: ")
             name = input("Digite seu nome: ")
+            
             break
         elif option == '2':
             email = input("digite o email")
@@ -73,17 +80,15 @@ def client():
         'email': email,
         'senha': senha
     }
-    send_user(sock,user_data)
-
+    responseee = send_user(sock,user_data,option)
+    print(responseee)
+    sock.close()
 
     ##Opções disponiveis
-    while True:
-
-        
-
-
-
-
+    while True:        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(("localhost", 57000))
+        print("Conectado ao servidor.")
         print("\nOpções:")
         print("1. Baixar arquivo público")
         print("2. Enviar arquivo")
@@ -112,9 +117,10 @@ def client():
             print("funcao em desenvolvimento")
         # lista todos os arquivos do servidor
         elif option == "5":
+            print(sock)
             response = list_file(sock, "list")
-            print("Arquivos públicos no servidor:")
             print(response)
+            print("Arquivos públicos no servidor:")
         # sair da conexao dos servidores de arquivos
         elif option == "6":
             sock.sendall(b"exit")
