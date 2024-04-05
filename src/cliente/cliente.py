@@ -1,19 +1,22 @@
 import socket
 from termcolor import colored
-
-def list_file(sock, request):
-    """
-    Lista os arquivos do servidor.
-    """
+import json
+    
+    
+#Lista os arquivos do servidor.
+def send_file_request(sock, request):
     sock.sendall(request.encode())
     response = sock.recv(1024).decode()
     return response
 
 
+def send_user(sock, user_data):
+    data = json.dumps(user_data)
+    sock.sendall(data.encode())
+
+
+#Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
-    """
-    Baixa o arquivo do servidor para o cliente via socket.
-    """
     try:
         with open("arquivos - cliente/" + filename, "wb") as file:
             while True:
@@ -26,11 +29,8 @@ def download_file(sock, filename):
     except Exception as e:
         print(f"Erro durante o download do arquivo '{filename}': {e}")
 
-
+#Envia o arquivo do cliente para o servidor via socket.
 def send_file(sock, filename):
-    """
-    Envia o arquivo do cliente para o servidor via socket.
-    """
     try:
         with open("arquivos - cliente/" + filename, "rb") as file:
             for dado in file.readlines():
@@ -47,9 +47,44 @@ def send_file(sock, filename):
 def client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", 57000))
-    print("Conectado ao servidor.")
+    print("Conectado ao servidor principal.")
+    print("bem vindo a steam verde ")
+    print("------------------------")
+    print("1- Fazer login")
+    print("2- cadastra usuario")
+
+    while True:
+        option = input("Escolha a opcao: ")
+
+        if option == "1":
+            email = input("email: ")
+            senha = input("senha: ")
+            name = input("Digite seu nome: ")
+            break
+        elif option == '2':
+            email = input("digite o email")
+            senha = input("digite a senha")
+            name = input("Digite seu nome: ")
+            break
+        else:
+            print("opcao invalida tente novamente")
+
+    user_data = {
+        'nome': name,
+        'email': email,
+        'senha': senha
+    }
+    send_user(sock,user_data)
+
+
     ##Opções disponiveis
     while True:
+
+        
+
+
+
+
         print("\nOpções:")
         print("1. Baixar arquivo público")
         print("2. Enviar arquivo")

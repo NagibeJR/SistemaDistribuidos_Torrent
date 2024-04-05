@@ -1,20 +1,48 @@
 import socket
 import os
 from termcolor import colored
+import json
 
+
+def registrar_usuario(request):
+    novo_usuario = {
+        'nome': request[0],
+        'email': request[1],
+        'senha': request[2]
+    }
+
+    print(novo_usuario)
+    print(request)
+
+    # Verifica se o arquivo de usuários existe
+    if not os.path.exists('registros/usuarios.json'):
+        with open('registros/usuarios.json', 'w') as arquivo:
+            arquivo.write("[]")  # Cria um arquivo vazio se não existir
+
+    # Carrega os usuários do arquivo
+    with open('registros/usuarios.json', 'r') as arquivo:
+        try:
+            usuarios = json.load(arquivo)
+        except json.decoder.JSONDecodeError:
+            usuarios = []
+
+    # Adiciona o novo usuário à lista de usuários
+    usuarios.append(novo_usuario)
+
+    # Escreve a lista de usuários de volta no arquivo
+    with open('registros/usuarios.json', 'w') as arquivo:
+        json.dump(usuarios, arquivo, indent=4)
+
+    print("Usuário registrado com sucesso!")
+
+#Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
 def list_files(conn):
-    """
-    Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
-    """
-    files = os.listdir("arquivos - servidor")
+    files = os.listdir("src/arquivos - servidor")
     file_list = "\n".join(files)
     conn.sendall(file_list.encode())
 
-
+#Envia o arquivo solicitado para o cliente. 
 def send_file(conn, filename):
-    """
-    Envia o arquivo solicitado para o cliente.
-    """
     try:
         with open("arquivos - servidor/" + filename, "rb") as file:
             for dado in file.readlines():
@@ -29,6 +57,7 @@ def send_file(conn, filename):
         print(f"Ocorreu um erro ao enviar o arquivo: {e}")
 
 
+# Recebe o arquivo do cliente via soket e salva no servidor.
 def receive_file(conn, filename):
     """
     Recebe o arquivo do cliente via socket e salva no servidor.
@@ -47,11 +76,8 @@ def receive_file(conn, filename):
     except Exception as e:
         print(f"Erro durante o recebimento do arquivo '{filename}': {e}")
 
-
+#Lida com a conexão do cliente.
 def handle_client(conn, addr):
-    """
-    Lida com a conexão do cliente.
-    """
     print(f"Conexão estabelecida com {addr}")
     try:
         while True:
@@ -77,11 +103,10 @@ def handle_client(conn, addr):
         conn.close()
         print(f"Conexão encerrada com {addr}")
 
-
+#Inicia o servidor.
 def start_server(host, port):
-    """
-    Inicia o servidor.
-    """
+
+
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
     server.listen(5)
@@ -89,7 +114,7 @@ def start_server(host, port):
 
     # Listar os arquivos ao iniciar o servidor
     print(colored("Arquivos no servidor:","green"))
-    files = os.listdir("arquivos - servidor")
+    files = os.listdir("src/arquivos - servidor")
 
     for file in files:
         print(colored(file,"light_magenta"))
