@@ -11,16 +11,16 @@ def send_user(sock, user_data,option):
     data = json.dumps(user_data)
     response = sock.send(f"{option} {data}".encode())
     return response
-    
 
-#Lista os arquivos do servidor.
+
+# Lista os arquivos do servidor.
 def list_file(sock, request):
     sock.sendall(request.encode())
     response = sock.recv(1024).decode()
     return response
 
 
-#Baixa o arquivo do servidor para o cliente via socket.
+# Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
     try:
         with open("arquivos - cliente/" + filename, "wb") as file:
@@ -34,7 +34,7 @@ def download_file(sock, filename):
     except Exception as e:
         print(f"Erro durante o download do arquivo '{filename}': {e}")
 
-#Envia o arquivo do cliente para o servidor via socket.
+# Envia o arquivo do cliente para o servidor via socket.
 def send_file(sock, filename):
     try:
         with open("arquivos - cliente/" + filename, "rb") as file:
@@ -57,19 +57,18 @@ def client():
     print("1- Fazer login")
     print("2- cadastra usuario")
 
-
     while True:
         option = input("Escolha a opcao: ")
 
         if option == "1":
-            email = input("email: ")
-            senha = input("senha: ")
+            email = input("Email: ")
+            senha = input("Senha: ")
             name = input("Digite seu nome: ")
-            
+
             break
         elif option == '2':
-            email = input("digite o email")
-            senha = input("digite a senha")
+            email = input("Digite o email:")
+            senha = input("Digite a senha:")
             name = input("Digite seu nome: ")
             break
         else:

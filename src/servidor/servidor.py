@@ -3,7 +3,7 @@ import os
 from termcolor import colored
 import json
 
-# funcao para registro de usuarios 
+# funcao para registro de usuarios
 def registrar_usuario(conn,request):
     json_formatado = json.loads(request)
     novo_usuario = {
@@ -32,14 +32,16 @@ def registrar_usuario(conn,request):
 
     print("Usuário registrado com sucesso!")
     conn.send("Usuario cadastrado".encode())
-#Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
+
+
+# Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
 def list_files(conn):
-    files = os.listdir("src/arquivos - servidor")
+    files = os.listdir("arquivos - servidor")
     file_list = "\n".join(files)
     conn.sendall(file_list.encode())
 
 
-#Recebe o arquivo do cliente via socket e salva no servidor.
+# Recebe o arquivo do cliente via socket e salva no servidor.
 def receive_file(conn, filename):
     file_path = os.path.join("arquivos - servidor", filename)
     with open(file_path, "wb") as file:
@@ -51,7 +53,7 @@ def receive_file(conn, filename):
         print(f"Arquivo {filename} recebido e salvo com sucesso.")
         file.close()
 
-#Envia o arquivo solicitado para o cliente.
+# Envia o arquivo solicitado para o cliente.
 def send_file(conn, filename):
     try:
         with open("arquivos - servidor/" + filename, "rb") as file:
@@ -69,7 +71,7 @@ def server():
     PORT = 57000
     start_server(HOST, PORT)
 
-#Inicia o servidor.
+# Inicia o servidor.
 def start_server(host, port):
     while True:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -82,7 +84,7 @@ def start_server(host, port):
 # Listar os arquivos ao iniciar o servidor
 def hub_server(server):
     print(colored("Arquivos no servidor:","green"))
-    files = os.listdir("src/arquivos - servidor")
+    files = os.listdir("arquivos - servidor")
 
     for file in files:
         print(colored(file,"light_magenta"))
@@ -92,28 +94,28 @@ def hub_server(server):
         print(f"Conexão estabelecida com {addr}")
 
         try:
-            
-                request = conn.recv(1024).decode()
-                print("PRINT DA REQUEST SENDO FEITA",request)
-                ## tem que trata esse kanso 
-                codigo, json_str = request.split(' ', 1)
-                print(codigo)
 
-                if not request:
-                    break
-                elif codigo == "register":
-                    registrar_usuario(conn,json_str)
-                elif codigo == "exit":
-                        break
-                elif codigo == "list":
-                    list_files(conn)
-                elif codigo == "send":
-                    codigo, filename = request.split()
-                    send_file(conn, filename)
-                    conn.close()
-                    print("tamo enviando")
-                elif codigo == "upload":
-                    receive_file(conn, json_str)
+            request = conn.recv(1024).decode()
+            print("PRINT DA REQUEST SENDO FEITA", request)
+            ## tem que trata esse kanso
+            codigo, json_str = request.split(" ", 1)
+            print(codigo)
+
+            if not request:
+                break
+            elif codigo == "register":
+                registrar_usuario(conn, json_str)
+            elif codigo == "exit":  # da erro
+                break
+            elif codigo == "list":  # da erro
+                list_files(conn)
+            elif codigo == "send":
+                codigo, filename = request.split()
+                send_file(conn, filename)
+                conn.close()
+                print("tamo enviando")
+            elif codigo == "upload":
+                receive_file(conn, json_str)
         except ConnectionResetError:
             print("Conexão fechada pelo cliente.")
         finally:
