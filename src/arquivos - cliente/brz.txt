@@ -1,0 +1,18 @@
+Exemplo 6.1
+Suponha que um canal de voz ocupe uma largura de banda de 4 kHz. Precisamos combinar três canais
+de voz em um link com uma largura de banda de 12 kHz, de 20 a 32 kHz. Mostre a configuração, usando
+o domínio de freqüências. Suponha que não existam bandas de proteção.
+Solução
+Deslocamos (modulamos) cada um dos três canais de voz para uma largura de banda diferente, como
+pode ser visto na Figura 6.6. Usamos a largura de banda de 20 a 24 kHz para o primeiro canal, a largura
+de banda de 24 a 28 kHz para o segundo canal e 28 a 32 kHz para o terceiro. Em seguida, os combinamos conforme mostrado na Figura 6.6. No receptor, cada canal recebe o sinal inteiro; usando um filtro,
+o receptor separa seu próprio sinal. O primeiro canal utiliza um filtro que deixa passar freqüências de
+20 a 24 kHz e rejeita (descarta) quaisquer outras freqüências. O segundo canal usa um filtro que deixa
+passar freqüências entre 24 a 28 kHz e o terceiro canal emprega um filtro que deixa passar freqüências
+entre 28 a 32 kHz. Ao final, cada canal desloca a freqüência do sinal original para iniciar do zero.
+Exemplo 6.2
+Cinco canais, cada um dos quais com uma largura de banda de 100 kHz, devem ser multiplexados juntos. Qual é a largura de banda total mínima do link, se há a necessidade de uma banda de proteção de
+10 kHz entre os canais para evitar interferências?
+Solução
+Para cinco canais, precisamos pelo menos de quatro bandas de proteção. Isso significa que a largura de
+banda total é no mínimo de 5 3 100 + 4 3 10 = 540 kHz, como pode ser observado na Figura 6.7.

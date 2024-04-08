@@ -3,6 +3,14 @@ import os
 from termcolor import colored
 import json
 
+# Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
+def list_files(conn):
+    files = os.listdir("arquivos - servidor")
+    file_list = "\n".join(files)
+    conn.sendall(file_list.encode())
+    print("Lista de arquivos enviada para o cliente.")
+
+
 # funcao para registro de usuarios
 def registrar_usuario(conn,request):
     json_formatado = json.loads(request)
@@ -32,14 +40,6 @@ def registrar_usuario(conn,request):
 
     print("Usuário registrado com sucesso!")
     conn.send("Usuario cadastrado".encode())
-
-
-# Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
-def list_files(conn):
-    files = os.listdir("arquivos - servidor")
-    file_list = "\n".join(files)
-    conn.sendall(file_list.encode())
-
 
 # Recebe o arquivo do cliente via socket e salva no servidor.
 def receive_file(conn, filename):
@@ -97,25 +97,24 @@ def hub_server(server):
 
             request = conn.recv(1024).decode()
             print("PRINT DA REQUEST SENDO FEITA", request)
-            ## tem que trata esse kanso
-            codigo, json_str = request.split(" ", 1)
-            print(codigo)
 
             if not request:
                 break
-            elif codigo == "register":
-                registrar_usuario(conn, json_str)
-            elif codigo == "exit":  # da erro
-                break
-            elif codigo == "list":  # da erro
-                list_files(conn)
-            elif codigo == "send":
-                codigo, filename = request.split()
-                send_file(conn, filename)
-                conn.close()
-                print("tamo enviando")
-            elif codigo == "upload":
-                receive_file(conn, json_str)
+            elif request == "exit" or request == "list":
+                if request == "exit":  # da erro
+                    break
+                elif request == "list":  # da erro
+                    list_files(conn)
+            else:
+                codigo, json_str = request.split(" ", 1)   
+                if codigo == "register":
+                    registrar_usuario(conn, json_str)
+                elif codigo == "send":
+                    codigo, filename = request.split()
+                    send_file(conn, filename)
+                    conn.close()
+                elif codigo == "upload":
+                    receive_file(conn, json_str)
         except ConnectionResetError:
             print("Conexão fechada pelo cliente.")
         finally:

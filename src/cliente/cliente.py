@@ -2,6 +2,14 @@ import socket
 from termcolor import colored
 import json
 
+
+# Lista os arquivos do servidor.
+def list_file(sock, request):
+    sock.sendall(request.encode())
+    response = sock.recv(1024).decode()
+    return response
+
+
 # envio das informacoes do usuario
 def send_user(sock, user_data,option):
     if option =='1':
@@ -11,14 +19,6 @@ def send_user(sock, user_data,option):
     data = json.dumps(user_data)
     response = sock.send(f"{option} {data}".encode())
     return response
-
-
-# Lista os arquivos do servidor.
-def list_file(sock, request):
-    sock.sendall(request.encode())
-    response = sock.recv(1024).decode()
-    return response
-
 
 # Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
@@ -64,8 +64,8 @@ def client():
             email = input("Email: ")
             senha = input("Senha: ")
             name = input("Digite seu nome: ")
-
             break
+        
         elif option == '2':
             email = input("Digite o email:")
             senha = input("Digite a senha:")
@@ -116,10 +116,9 @@ def client():
             print("funcao em desenvolvimento")
         # lista todos os arquivos do servidor
         elif option == "5":
-            print(sock)
             response = list_file(sock, "list")
-            print(response)
             print("Arquivos públicos no servidor:")
+            print(response)
         # sair da conexao dos servidores de arquivos
         elif option == "6":
             sock.sendall(b"exit")
