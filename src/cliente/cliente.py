@@ -7,7 +7,8 @@ import json
 def list_file(sock, request):
     sock.sendall(request.encode())
     response = sock.recv(1024).decode()
-    return response
+    print("\nArquivos públicos no servidor:")
+    print(response)
 
 
 # envio das informacoes do usuario
@@ -22,20 +23,27 @@ def send_user(sock, user_data,option):
 
 # Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
-    try:
-        with open("arquivos - cliente/" + filename, "wb") as file:
-            while True:
-                data = sock.recv(4096)  # Recebe 1KB de dados do servidor
-                if not data:
-                    break
-                file.write(data)
-        print(f"Arquivo '{filename}' recebido com sucesso.")
-        file.close()
-    except Exception as e:
-        print(f"Erro durante o download do arquivo '{filename}': {e}")
+    sock.send(f"download {filename}".encode())
+    response = sock.recv(1024).decode()
+    if response == "PRIVADO":
+        print(f"Você não tem permissão para baixar o arquivo {filename}.")
+    else:
+        try:
+            with open("arquivos - cliente/" + filename, "wb") as file:
+                while True:
+                    data = sock.recv(4096)  # Recebe 1KB de dados do servidor
+                    if not data:
+                        break
+                    file.write(data)
+            file.close()
+            print(f"Baixando o arquivo {filename}...")
+            print(f"Arquivo {filename} baixado com sucesso.")
+        except Exception as e:
+            print(f"Erro durante o download do arquivo '{filename}': {e}")
 
 # Envia o arquivo do cliente para o servidor via socket.
 def send_file(sock, filename):
+    sock.send(f"upload {filename}".encode())
     try:
         with open("arquivos - cliente/" + filename, "rb") as file:
             for data in file.readlines():
@@ -47,13 +55,23 @@ def send_file(sock, filename):
     except Exception as e:
         print(f"Ocorreu um erro ao enviar o arquivo: {e}")
 
+# Envia a solicitação para tornar um arquivo privado para o servidor.
+def priv_file(sock, filename):
+    sock.send(f"privar {filename}".encode())
+    print(f"Arquivo '{filename}' tornando privado...")
+    response = sock.recv(1024).decode()
+    if response == "OK":
+        print(f"Arquivo '{filename}' tornou-se privado com sucesso.")
+    else:
+        print(f"Erro ao tornar o arquivo '{filename}' privado: {response}")
+
+
 ##imput do cliente
 def client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", 57000))
     print("Conectado ao servidor principal.")
-    print("bem vindo a steam verde ")
-    print("------------------------")
+    print(colored("bem vindo a steam verde\n------------------------ ", "green"))
     print("1- Fazer login")
     print("2- cadastra usuario")
 
@@ -65,7 +83,7 @@ def client():
             senha = input("Senha: ")
             name = input("Digite seu nome: ")
             break
-        
+
         elif option == '2':
             email = input("Digite o email:")
             senha = input("Digite a senha:")
@@ -89,36 +107,33 @@ def client():
         sock.connect(("localhost", 57000))
         print("Conectado ao servidor.")
         print("\nOpções:")
-        print("1. Baixar arquivo público")
-        print("2. Enviar arquivo")
-        print("3. Autorizar download de arquivo privado")
+        print("1. Listar arquivos públicos no servidor")
+        print("2. Baixar arquivo público")
+        print("3. Enviar arquivo")
         print("4. Privar arquivo")
-        print("5. Listar arquivos públicos no servidor")
+        print("5. Autorizar download de arquivo privado")
         print("6. Sair")
         option = input("Escolha uma opção: ")
         # baixar os arquivos do servidores
+        # lista todos os arquivos do servidor
         if option == "1":
-            filename = input("Digite o nome do arquivo público que deseja baixar: ")
-            sock.send(f"send {filename}".encode())
-            download_file(sock, filename)
-            print(f"Baixando o arquivo {filename}...")
-            print(f"Arquivo {filename} baixado com sucesso.")
-        # enviar um arquivo privado ou publico
+            list_file(sock, "list")
+
         elif option == "2":
-            filename = input("Digite o nome do arquivo que deseja enviar: ")
-            sock.send(f"upload {filename}".encode())
-            send_file(sock, filename)
-        # opcao para autorizar o downalod de um arquivo
+            filename = input("Digite o nome do arquivo público que deseja baixar: ")
+            download_file(sock, filename)
+        # enviar um arquivo privado ou publico
         elif option == "3":
-            print("funcao e desenvolvimento")
+            filename = input("Digite o nome do arquivo que deseja enviar: ")
+            send_file(sock, filename)
+
         # opcao para bloquear um arquivo para torna publico
         elif option == "4":
-            print("funcao em desenvolvimento")
-        # lista todos os arquivos do servidor
+            filename = input("Digite o nome do arquivo que deseja tornar privado: ")
+            priv_file(sock, filename)
+        # opcao para autorizar o downalod de um arquivo
         elif option == "5":
-            response = list_file(sock, "list")
-            print("Arquivos públicos no servidor:")
-            print(response)
+            print("funcao e desenvolvimento")
         # sair da conexao dos servidores de arquivos
         elif option == "6":
             sock.sendall(b"exit")
