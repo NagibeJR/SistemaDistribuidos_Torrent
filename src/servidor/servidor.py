@@ -2,6 +2,7 @@ import socket
 import os
 from termcolor import colored
 import json
+import logging
 
 # Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
 def list_files(conn):
@@ -45,8 +46,67 @@ def registrar_usuario(conn,request):
     print("Usuário registrado com sucesso!")
     conn.send("Usuario cadastrado".encode())
 
+def login_usuario(conn, request):
+    json_formatado = json.loads(request)
+    email = json_formatado['email']
+    senha = json_formatado['senha']
+
+    # Carregar usuários do arquivo JSON
+    with open('registros/usuarios.json', 'r') as arquivo:
+        usuarios = json.load(arquivo)
+
+    # Verificar se o usuário existe e a senha está correta
+    for usuario in usuarios:
+        if usuario['email'] == email and usuario['senha'] == senha:
+            print("Login bem sucedido!")
+            conn.send("Login bem sucedido!".encode())
+            return True
+    
+    # Se não encontrar um usuário correspondente ou a senha estiver incorreta
+    print("Usuário ou senha incorretos.")
+    conn.send("Usuário ou senha incorretos.".encode())
+    return False
+
+
+def adicionar_permission(nome_arquivo, nova_permission):
+    # Carregar o arquivo JSON existente
+    with open('arquivo.json', 'r') as file:
+        dados = json.load(file)
+    
+    # Encontrar o item correspondente ao nome do arquivo
+    for item in dados:
+        if item["nome_arquivo"] == nome_arquivo:
+            # Adicionar a nova permissão à lista de permissões
+            item["permissions"].append(nova_permission)
+            break # Encontrou o item, então pode parar de procurar
+    
+    # Salvar a lista atualizada de volta ao arquivo JSON
+    with open('arquivo.json', 'w') as file:
+        json.dump(dados, file, indent=4)
+
+
+def adicionar_novo_dado(nome_arquivo, email, permissions):
+    # Carregar o arquivo JSON existente
+    with open('arquivo.json', 'r') as file:
+        dados = json.load(file)
+    
+    # Criar um novo dicionário com os dados do novo item
+    novo_dado = {
+        "nome_arquivo": nome_arquivo,
+        "email": email,
+        "permissions": permissions
+    }
+    
+    # Adicionar o novo item à lista de dados
+    dados.append(novo_dado)
+    
+    # Salvar a lista atualizada de volta ao arquivo JSON
+    with open('arquivo.json', 'w') as file:
+        json.dump(dados, file, indent=4)
+
+
 # Recebe o arquivo do cliente via socket e salva no servidor.
-def receive_file(conn, filename):
+def receive_file(conn, filename,email_usuario):
     file_path = os.path.join("arquivos - servidor", filename)
     with open(file_path, "wb") as file:
         while True:
@@ -56,13 +116,13 @@ def receive_file(conn, filename):
             file.write(data)
         print(f"Arquivo {filename} recebido e salvo com sucesso.")
         file.close()
+    adicionar_novo_dado(filename,email_usuario,[""])
 
 # Envia o arquivo solicitado para o cliente.
 def send_file(conn, filename):
     try:
-        file_path = os.path.join("arquivos - servidor", filename)
         # Verifica se o arquivo não é privado (não começa com "privado_")
-        if not filename.startswith("privado_") and os.path.exists(file_path):
+        if not filename.startswith("privado_"):
             with open("arquivos - servidor/" + filename, "rb") as file:
                 for data in file.readlines():
                     conn.send(data)
@@ -136,25 +196,36 @@ def hub_server(server):
             request = conn.recv(1024).decode()
             print("PRINT DA REQUEST SENDO FEITA", request)
 
+            codigo  = request.split()
+            codigo = codigo[0]
+
             if not request:
                 break
-            elif request == "exit" or request == "list":
-                if request == "exit":  # da erro
+            elif codigo == "exit" or codigo == "list":
+                if codigo == "exit":  # da erro
                     break
-                elif request == "list":  # da erro
+                elif codigo == "list":  # da erro
                     list_files(conn)
             else:
-                codigo, json_str = request.split(" ", 1)   
                 if codigo == "register":
-                    registrar_usuario(conn, json_str)
+                    json_str = request.split(" ", 1)   
+                    json =  json_str[1]
+                    registrar_usuario(conn, json)
+                elif codigo == "login":
+                    json_str = request.split(" ", 1)   
+                    json =  json_str[1]
+                    login_usuario(conn,json)
                 elif codigo == "download":
                     codigo, filename = request.split()
                     send_file(conn, filename)
                     conn.close()
                 elif codigo == "upload":
-                    receive_file(conn, json_str)
+
+                    receive_file(conn, json_str,email)
                 elif codigo == "privar":
-                    priv_file(conn, json_str)
+                    upload_file  = request.split()
+                    upload_file = upload_file[1]
+                    priv_file(conn, upload_file)
         except ConnectionResetError:
             print("Conexão fechada pelo cliente.")
         finally:

@@ -19,27 +19,25 @@ def send_user(sock, user_data,option):
         option = 'register'
     data = json.dumps(user_data)
     response = sock.send(f"{option} {data}".encode())
+    response = sock.recv(1024).decode()
     return response
 
 # Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
     sock.send(f"download {filename}".encode())
     response = sock.recv(1024).decode()
-    if response == "PRIVADO":
-        print(f"Você não tem permissão para baixar o arquivo {filename}.")
-    else:
-        try:
-            with open("arquivos - cliente/" + filename, "wb") as file:
-                while True:
-                    data = sock.recv(4096)  # Recebe 1KB de dados do servidor
-                    if not data:
-                        break
-                    file.write(data)
-            file.close()
-            print(f"Baixando o arquivo {filename}...")
-            print(f"Arquivo {filename} baixado com sucesso.")
-        except Exception as e:
-            print(f"Erro durante o download do arquivo '{filename}': {e}")
+    try:
+        print(f"Baixando o arquivo {filename}...")
+        with open("arquivos - cliente/" + filename, "wb") as file:
+            while True:
+                data = sock.recv(4096)  # Recebe 1KB de dados do servidor
+                if not data:
+                    break
+                file.write(data)
+        print(f"Arquivo '{filename}' recebido com sucesso.")
+        file.close()
+    except Exception as e:
+        print(f"Erro durante o download do arquivo '{filename}': {e}")
 
 # Envia o arquivo do cliente para o servidor via socket.
 def send_file(sock, filename):
@@ -56,8 +54,8 @@ def send_file(sock, filename):
         print(f"Ocorreu um erro ao enviar o arquivo: {e}")
 
 # Envia a solicitação para tornar um arquivo privado para o servidor.
-def priv_file(sock, filename):
-    sock.send(f"privar {filename}".encode())
+def priv_file(sock, filename,email):
+    sock.send(f"privar {filename} {email}".encode())
     print(f"Arquivo '{filename}' tornando privado...")
     response = sock.recv(1024).decode()
     if response == "OK":
@@ -75,6 +73,7 @@ def client():
     print("1- Fazer login")
     print("2- cadastra usuario")
 
+    email = ''
     while True:
         option = input("Escolha a opcao: ")
 
@@ -130,7 +129,8 @@ def client():
         # opcao para bloquear um arquivo para torna publico
         elif option == "4":
             filename = input("Digite o nome do arquivo que deseja tornar privado: ")
-            priv_file(sock, filename)
+            print(email)
+            priv_file(sock, filename,email)
         # opcao para autorizar o downalod de um arquivo
         elif option == "5":
             print("funcao e desenvolvimento")
