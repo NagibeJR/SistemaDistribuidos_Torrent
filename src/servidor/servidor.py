@@ -118,6 +118,7 @@ def receive_file(conn, filename,email_usuario):
         file.close()
     adicionar_novo_dado(filename,email_usuario,[""])
 
+
 # Envia o arquivo solicitado para o cliente.
 def send_file(conn, filename):
     try:
@@ -126,6 +127,7 @@ def send_file(conn, filename):
             with open("arquivos - servidor/" + filename, "rb") as file:
                 for data in file.readlines():
                     conn.send(data)
+                print (data)
                 print("Arquivo enviado:", filename)
         else:
             conn.send(b"PRIVADO")
