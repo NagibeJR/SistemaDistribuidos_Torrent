@@ -26,7 +26,6 @@ def send_user(sock, user_data,option):
 # Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
     sock.send(f"download {filename}".encode())
-    response = sock.recv(1024).decode()
     try:
         print(f"Baixando o arquivo {filename}...")
         with open("arquivos - cliente/" + filename, "wb") as file:
@@ -39,6 +38,7 @@ def download_file(sock, filename):
         file.close()
     except Exception as e:
         print(f"Erro durante o download do arquivo '{filename}': {e}")
+
 
 
 # sepossivel usar bites para envio
