@@ -57,15 +57,16 @@ def receive_file(conn, filename):
         print(f"Arquivo {filename} recebido e salvo com sucesso.")
         file.close()
 
+
 # Envia o arquivo solicitado para o cliente.
 def send_file(conn, filename):
     try:
-        file_path = os.path.join("arquivos - servidor", filename)
         # Verifica se o arquivo não é privado (não começa com "privado_")
-        if not filename.startswith("privado_") and os.path.exists(file_path):
+        if not filename.startswith("privado_"):
             with open("arquivos - servidor/" + filename, "rb") as file:
                 for data in file.readlines():
                     conn.send(data)
+                print (data)
                 print("Arquivo enviado:", filename)
         else:
             conn.send(b"PRIVADO")

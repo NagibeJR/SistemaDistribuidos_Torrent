@@ -21,34 +21,33 @@ def send_user(sock, user_data,option):
     response = sock.send(f"{option} {data}".encode())
     return response
 
+
 # Baixa o arquivo do servidor para o cliente via socket.
 def download_file(sock, filename):
     sock.send(f"download {filename}".encode())
-    response = sock.recv(1024).decode()
-    if response == "PRIVADO":
-        print(f"Você não tem permissão para baixar o arquivo {filename}.")
-    else:
-        try:
-            with open("arquivos - cliente/" + filename, "wb") as file:
-                while True:
-                    data = sock.recv(4096)  # Recebe 1KB de dados do servidor
-                    if not data:
-                        break
-                    file.write(data)
-            file.close()
-            print(f"Baixando o arquivo {filename}...")
-            print(f"Arquivo {filename} baixado com sucesso.")
-        except Exception as e:
-            print(f"Erro durante o download do arquivo '{filename}': {e}")
+    try:
+        print(f"Baixando o arquivo {filename}...")
+        with open("arquivos - cliente/" + filename, "wb") as file:
+            while True:
+                data = sock.recv(4096)  # Recebe 1KB de dados do servidor
+                if not data:
+                    break
+                file.write(data)
+        print(f"Arquivo '{filename}' recebido com sucesso.")
+        file.close()
+    except Exception as e:
+        print(f"Erro durante o download do arquivo '{filename}': {e}")
 
+
+# sepossivel usar bites para envio
 # Envia o arquivo do cliente para o servidor via socket.
 def send_file(sock, filename):
     sock.send(f"upload {filename}".encode())
     try:
         with open("arquivos - cliente/" + filename, "rb") as file:
-            for data in file.readlines():
-                sock.send(data)
-            print("Arquivo enviado com sucesso!")
+                for data in file.readlines():
+                    sock.send(data)
+                print("Arquivo enviado com sucesso!")
         file.close()
     except FileNotFoundError:
         print(f"Arquivo '{filename}' não encontrado.")
