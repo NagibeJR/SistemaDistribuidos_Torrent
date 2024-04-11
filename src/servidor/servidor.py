@@ -141,7 +141,7 @@ def adicionar_permission(conn,nome_arquivo, nova_permission):
     # Salvar a lista atualizada de volta ao arquivo JSON
     with open('registros/logs_arquivo.json', 'w') as file:
         json.dump(dados, file, indent=4)
-    conn.send("Usuário autorizado.".encode())
+    conn.send("Arquivo privado com sucesso.".encode())
     
     
 
@@ -184,33 +184,35 @@ def receive_file(conn, filename,email_usuario):
 
 def send_file(conn, filename, email):
     try:
+        # Carregar a lista de arquivos e permissões
         with open('registros/logs_arquivo.json', 'r') as file:
             dados = json.load(file)
-            for item in dados:
-                if item["nome_arquivo"] == filename:
-                    permissions = item["permissions"]
-                    if not permissions:  # Se as permissões estiverem vazias, o arquivo é público
-                        with open("arquivos - servidor/" + filename, "rb") as file:
-                            for data in file.readlines(): 
-                                print (data) 
-                                conn.send(data) 
-                            print("Arquivo enviado:", filename) 
-                    elif email in permissions:  # Se o email estiver na lista de permissões, o usuário pode baixar
-                        with open("arquivos - servidor/" + filename, "rb") as file:
-                            for data in file.readlines(): 
-                                print (data) 
-                                conn.send(data) 
-                            print("Arquivo enviado:", filename)
-                    else:
-                        conn.send(f"Você não tem permissão para baixar este arquivo.")
-                        print(f"Permissões insuficientes para o arquivo '{filename}' para o email '{email}'.")
+        
+        # Verifica se o arquivo solicitado existe e se o usuário tem permissão para baixá-lo
+        for item in dados:
+            if item["nome_arquivo"] == filename:
+                if not item["permissions"] or email in item["permissions"]:
+                    caminho_completo = os.path.join("arquivos - servidor", filename)
+                    if os.path.exists(caminho_completo):
+                        conn.send("Enviando".encode())
+                        with open(caminho_completo, "rb") as file_to_send:
+                            data = file_to_send.read(4096)
+                            while data:
+                                conn.send(data)
+                                data = file_to_send.read(4096)
+                        conn.send("EOF".encode())  # Marcador de fim de arquivo
+                        print(f"Arquivo {filename} enviado.")
+                        return
+                else:
+                    conn.send("Acesso negado.".encode())
                     return
-            else:
-                conn.send(f"Arquivo '{filename}' não encontrado.")
-    except FileNotFoundError:
-        conn.send(f"Arquivo não encontrado.")
+        # Se o loop terminar sem retornar, o arquivo não foi encontrado ou o usuário não tem permissão
+        conn.send("Arquivo não encontrado ou acesso negado.".encode())
+
     except Exception as e:
-        print(f"Ocorreu um erro ao enviar o arquivo: {e}")
+        print(f"Erro ao enviar o arquivo: {e}")
+        conn.send(f"Erro ao enviar o arquivo.".encode())
+
 
 
 
@@ -294,7 +296,7 @@ def handle_client(conn, addr):
                 elif codigo == "download":
                     comando, Nome_arquivo, email = request.split(" ", 2)
                     send_file(conn, Nome_arquivo, email)
-                    conn.close()
+                    conn.send(b"__EOF__")
                 elif codigo == "upload":
                     comando, Nome_arquivo, email = request.split(" ", 2)
                     print(Nome_arquivo)
