@@ -3,9 +3,13 @@
         "nome_arquivo": "alou.txt",
         "email": "logxp",
         "permissions": [
-            "",
             "logxp",
-            "nagibejr"
+            "nagibetur"
         ]
+    },
+    {
+        "nome_arquivo": "A.txt",
+        "email": "logxp",
+        "permissions": []
     }
 ]

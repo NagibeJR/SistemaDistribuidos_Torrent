@@ -6,15 +6,37 @@ import logging
 
 # Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
 def list_files(conn):
-    public_files = [
-        file
-        for file in os.listdir("arquivos - servidor")
-        if not file.startswith("privado_")
-    ]
+    # Carregar os dados do JSON a partir do arquivo
+    permissions_file = 'registros/logs_arquivo.json'
+    try:
+        with open(permissions_file, 'r') as file:
+            dados = json.load(file)
+    except FileNotFoundError:
+        print(f"Arquivo '{permissions_file}' não encontrado.")
+        return
+    except json.JSONDecodeError:
+        print("Erro ao decodificar o JSON.")
+        return
+
+    # Listar os arquivos disponíveis com base nas permissões
+    public_files = []
+    private_files = []
+    for item in dados:
+        if not item["permissions"]:  # Se as permissões estiverem vazias, o arquivo é público
+            public_files.append(item["nome_arquivo"])
+        else:
+            private_files.append(item["nome_arquivo"])
+
+    print(colored("Arquivos Públicos:", "blue"))
+    for file in public_files:
+        print(colored(file, "light_blue"))
+    
+    print(colored("\nArquivos Privados:", "red"))
+    for file in private_files:
+        print(colored(file, "light_red"))
+
     file_list = "\n".join(public_files)
     conn.sendall(file_list.encode())
-    print("Lista de arquivos enviada para o cliente.")
-
 
 # funcao para registro de usuarios
 def registrar_usuario(conn,request):
@@ -120,54 +142,48 @@ def receive_file(conn, filename,email_usuario):
             file.write(data)
         print(f"Arquivo {filename} recebido e salvo com sucesso.")
         file.close()
-    adicionar_novo_dado(filename,email_usuario,[""])
+    adicionar_novo_dado(filename,email_usuario,[])
 
 
-# Envia o arquivo solicitado para o cliente.
+
+
 def send_file(conn, filename, email):
     try:
-        # Verifica se o arquivo não é privado (não começa com "privado_")
-        if filename.startswith("privado_"):
-            with open("arquivos - servidor/" + filename, "rb") as file:
-                for data in file:
-                    conn.send(data)  # Aqui, 'data' já é do tipo bytes, então está correto
-                print("Arquivo enviado:", filename)
-        else:
-            print("TAMO NO ELSE")
-            with open('registros/logs_arquivo.json', 'r') as file:
-                dados = json.load(file)
+        with open('registros/logs_arquivo.json', 'r') as file:
+            dados = json.load(file)
             for item in dados:
-                print("ITEM FOR", item["permissions"])
                 if item["nome_arquivo"] == filename:
-                    permissoes = item["permissions"]
-                    for teste in permissoes:
-                        print(teste)
-                        if email == teste:
-                            print(email)
-                            with open("arquivos - servidor/" + filename, "rb") as file:
-                                for data in file:
-                                    print("DATAAA", data)
-                                    conn.send(data.encode())  # Aqui também estamos enviando bytes
+                    permissions = item["permissions"]
+                    if not permissions:  # Se as permissões estiverem vazias, o arquivo é público
+                        with open("arquivos - servidor/" + filename, "rb") as file:
+                            for data in file.readlines(): 
+                                print (data) 
+                                conn.send(data) 
+                            print("Arquivo enviado:", filename) 
+                    elif email in permissions:  # Se o email estiver na lista de permissões, o usuário pode baixar
+                        with open("arquivos - servidor/" + filename, "rb") as file:
+                            for data in file.readlines(): 
+                                print (data) 
+                                conn.send(data) 
                             print("Arquivo enviado:", filename)
-                else:
-                    conn.send(f"Você não tem permissão para baixar este arquivo.")  # Aqui estamos enviando uma string convertida para bytes
-                    break
+                    else:
+                        conn.send(f"Você não tem permissão para baixar este arquivo.")
+                        print(f"Permissões insuficientes para o arquivo '{filename}' para o email '{email}'.")
+                    return
             else:
-                conn.send(f"Arquivo '{filename}' não encontrado.")  # Se o arquivo não estiver no JSON de permissões
+                conn.send(f"Arquivo '{filename}' não encontrado.")
     except FileNotFoundError:
-        conn.send(b"Arquivo nao encontrado.")  # Aqui também estamos enviando bytes
+        conn.send(f"Arquivo não encontrado.")
     except Exception as e:
         print(f"Ocorreu um erro ao enviar o arquivo: {e}")
+
 
 
 
 # função para processar a solicitação de tornar um arquivo privado
 def priv_file(conn, filename,email):
     try:
-        if os.path.exists(os.path.join("arquivos - servidor", filename)):
-            old_path = os.path.join("arquivos - servidor", filename)
-            new_path = os.path.join("arquivos - servidor", "privado_" + filename)
-            os.rename(old_path, new_path)
+        if os.path.exists(os.path.join("arquivos - servidor", filename)): 
             print(f"Arquivo '{filename}' tornou-se privado.")
             adicionar_permission(conn,filename,email)
             conn.send("OK".encode())
@@ -196,28 +212,10 @@ def start_server(host, port):
 # Listar os arquivos ao iniciar o servidor
 def hub_server(server):
     print(colored("\nArquivos no servidor", "green"))
-    public_files = []
-    private_files = []
-
-    files = os.listdir("arquivos - servidor")
-    for file in files:
-        if file.startswith("privado_"):
-            private_files.append(file[len("privado_") :])
-        else:
-            public_files.append(file)
-
-    print(colored("Arquivos Públicos:", "blue"))
-    for file in public_files:
-        print(colored(file, "light_blue"))
-    
-    print(colored("\nArquivos Privados:", "red"))
-    for file in private_files:
-        print(colored(file, "light_red"))
 
     while True:
         conn, addr = server.accept()
         print(f"Conexão estabelecida com {addr}")
-
         try:
 
             
