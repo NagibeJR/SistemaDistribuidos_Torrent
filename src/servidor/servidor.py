@@ -4,6 +4,40 @@ from termcolor import colored
 import json
 import logging
 
+
+def primeiro_list():
+    # Carregar os dados do JSON a partir do arquivo
+    permissions_file = 'registros/logs_arquivo.json'
+    try:
+        with open(permissions_file, 'r') as file:
+            dados = json.load(file)
+    except FileNotFoundError:
+        print(f"Arquivo '{permissions_file}' não encontrado.")
+        return
+    except json.JSONDecodeError:
+        print("Erro ao decodificar o JSON.")
+        return
+
+    # Listar os arquivos disponíveis com base nas permissões
+    public_files = []
+    private_files = []
+    for item in dados:
+        if not item["permissions"]:  # Se as permissões estiverem vazias, o arquivo é público
+            public_files.append(item["nome_arquivo"])
+        else:
+            private_files.append(item["nome_arquivo"])
+
+    print(colored("Arquivos Públicos:", "blue"))
+    for file in public_files:
+        print(colored(file, "light_blue"))
+    
+    print(colored("\nArquivos Privados:", "red"))
+    for file in private_files:
+        print(colored(file, "light_red"))
+
+    file_list = "\n".join(public_files)
+
+
 # Lista todos os arquivos no diretório do servidor e envia a lista para o cliente.
 def list_files(conn):
     # Carregar os dados do JSON a partir do arquivo
@@ -212,7 +246,7 @@ def start_server(host, port):
 # Listar os arquivos ao iniciar o servidor
 def hub_server(server):
     print(colored("\nArquivos no servidor", "green"))
-
+    primeiro_list()
     while True:
         conn, addr = server.accept()
         print(f"Conexão estabelecida com {addr}")
