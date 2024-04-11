@@ -1,7 +1,11 @@
 [
     {
-        "nome_arquivo": "teste.txt",
+        "nome_arquivo": "alou.txt",
         "email": "logxp",
-        "permissions": ["logxpbr@gmail.com"]
+        "permissions": [
+            "",
+            "logxp",
+            "nagibejr"
+        ]
     }
 ]

@@ -68,9 +68,9 @@ def login_usuario(conn, request):
     return False
 
 
-def adicionar_permission(nome_arquivo, nova_permission):
+def adicionar_permission(conn,nome_arquivo, nova_permission):
     # Carregar o arquivo JSON existente
-    with open('arquivo.json', 'r') as file:
+    with open('registros/logs_arquivo.json', 'r') as file:
         dados = json.load(file)
     
     # Encontrar o item correspondente ao nome do arquivo
@@ -79,15 +79,19 @@ def adicionar_permission(nome_arquivo, nova_permission):
             # Adicionar a nova permissão à lista de permissões
             item["permissions"].append(nova_permission)
             break # Encontrou o item, então pode parar de procurar
+            
     
     # Salvar a lista atualizada de volta ao arquivo JSON
-    with open('arquivo.json', 'w') as file:
+    with open('registros/logs_arquivo.json', 'w') as file:
         json.dump(dados, file, indent=4)
+    conn.send("Usuário autorizado.".encode())
+    
+    
 
 
 def adicionar_novo_dado(nome_arquivo, email, permissions):
     # Carregar o arquivo JSON existente
-    with open('arquivo.json', 'r') as file:
+    with open('registros/logs_arquivo.json', 'r') as file:
         dados = json.load(file)
     
     # Criar um novo dicionário com os dados do novo item
@@ -101,7 +105,7 @@ def adicionar_novo_dado(nome_arquivo, email, permissions):
     dados.append(novo_dado)
     
     # Salvar a lista atualizada de volta ao arquivo JSON
-    with open('arquivo.json', 'w') as file:
+    with open('registros/logs_arquivo.json', 'w') as file:
         json.dump(dados, file, indent=4)
 
 
@@ -120,31 +124,52 @@ def receive_file(conn, filename,email_usuario):
 
 
 # Envia o arquivo solicitado para o cliente.
-def send_file(conn, filename):
+def send_file(conn, filename, email):
     try:
         # Verifica se o arquivo não é privado (não começa com "privado_")
-        if not filename.startswith("privado_"):
+        if filename.startswith("privado_"):
             with open("arquivos - servidor/" + filename, "rb") as file:
-                for data in file.readlines():
-                    conn.send(data)
-                print (data)
+                for data in file:
+                    conn.send(data)  # Aqui, 'data' já é do tipo bytes, então está correto
                 print("Arquivo enviado:", filename)
         else:
-            conn.send(b"PRIVADO")
+            print("TAMO NO ELSE")
+            with open('registros/logs_arquivo.json', 'r') as file:
+                dados = json.load(file)
+            for item in dados:
+                print("ITEM FOR", item["permissions"])
+                if item["nome_arquivo"] == filename:
+                    permissoes = item["permissions"]
+                    for teste in permissoes:
+                        print(teste)
+                        if email == teste:
+                            print(email)
+                            with open("arquivos - servidor/" + filename, "rb") as file:
+                                for data in file:
+                                    print("DATAAA", data)
+                                    conn.send(data.encode())  # Aqui também estamos enviando bytes
+                            print("Arquivo enviado:", filename)
+                else:
+                    conn.send(f"Você não tem permissão para baixar este arquivo.")  # Aqui estamos enviando uma string convertida para bytes
+                    break
+            else:
+                conn.send(f"Arquivo '{filename}' não encontrado.")  # Se o arquivo não estiver no JSON de permissões
     except FileNotFoundError:
-        conn.send(b"Arquivo nao encontrado.")
+        conn.send(b"Arquivo nao encontrado.")  # Aqui também estamos enviando bytes
     except Exception as e:
         print(f"Ocorreu um erro ao enviar o arquivo: {e}")
 
 
+
 # função para processar a solicitação de tornar um arquivo privado
-def priv_file(conn, filename):
+def priv_file(conn, filename,email):
     try:
         if os.path.exists(os.path.join("arquivos - servidor", filename)):
             old_path = os.path.join("arquivos - servidor", filename)
             new_path = os.path.join("arquivos - servidor", "privado_" + filename)
             os.rename(old_path, new_path)
             print(f"Arquivo '{filename}' tornou-se privado.")
+            adicionar_permission(conn,filename,email)
             conn.send("OK".encode())
         else:
             conn.send("Arquivo não encontrado.".encode())
@@ -195,6 +220,7 @@ def hub_server(server):
 
         try:
 
+            
             request = conn.recv(1024).decode()
             print("PRINT DA REQUEST SENDO FEITA", request)
 
@@ -218,16 +244,20 @@ def hub_server(server):
                     json =  json_str[1]
                     login_usuario(conn,json)
                 elif codigo == "download":
-                    codigo, filename = request.split()
-                    send_file(conn, filename)
+                    comando, Nome_arquivo, email = request.split(" ", 2)
+                    send_file(conn, Nome_arquivo,email)
                     conn.close()
                 elif codigo == "upload":
-
-                    receive_file(conn, json_str,email)
+                    comando, Nome_arquivo, email = request.split(" ", 2)
+                    print(Nome_arquivo)
+                    print(email)
+                    receive_file(conn, Nome_arquivo,email)
                 elif codigo == "privar":
-                    upload_file  = request.split()
-                    upload_file = upload_file[1]
-                    priv_file(conn, upload_file)
+                    comando, Nome_arquivo, email = request.split(" ", 2)
+                    priv_file(conn, Nome_arquivo,email)
+                elif codigo == "autorizar":
+                    comando, Nome_arquivo, email = request.split(" ", 2)
+                    adicionar_permission(conn,Nome_arquivo,email)
         except ConnectionResetError:
             print("Conexão fechada pelo cliente.")
         finally:
