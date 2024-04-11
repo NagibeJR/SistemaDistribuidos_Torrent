@@ -10,6 +10,18 @@
     {
         "nome_arquivo": "A.txt",
         "email": "logxp",
+        "permissions": [
+            "logxp"
+        ]
+    },
+    {
+        "nome_arquivo": "best.txt",
+        "email": "nagibetur",
+        "permissions": []
+    },
+    {
+        "nome_arquivo": "teste.txt",
+        "email": "logxp",
         "permissions": []
     }
 ]

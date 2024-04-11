@@ -3,6 +3,7 @@ import os
 from termcolor import colored
 import json
 import logging
+import threading
 
 
 def primeiro_list():
@@ -234,68 +235,95 @@ def server():
     start_server(HOST, PORT)
 
 # Inicia o servidor.
+active_threads = []
+
 def start_server(host, port):
-    while True:
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((host, port))
-        server.listen(5)
-        print(colored(f"Servidor escutando em {host}:{port}", "grey"))
-        hub_server(server)
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((host, port))
+    server.listen(5)
+    print(colored(f"Servidor escutando em {host}:{port}", "grey"))
 
-
-# Listar os arquivos ao iniciar o servidor
-def hub_server(server):
-    print(colored("\nArquivos no servidor", "green"))
-    primeiro_list()
     while True:
         conn, addr = server.accept()
         print(f"Conexão estabelecida com {addr}")
-        try:
 
-            
-            request = conn.recv(1024).decode()
+        # Inicia uma nova thread para lidar com o cliente
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+
+        # Adiciona a nova thread à lista de threads ativas
+        active_threads.append(thread)
+    
+
+
+# Listar os arquivos ao iniciar o servidor
+def handle_client(conn, addr):
+    print(f"Conexão estabelecida com {addr}")
+    try:
+        while True:
+            # Attempt to receive data from the client
+            try:
+                request = conn.recv(1024).decode()
+                if not request:
+                    break
+            except OSError as e:
+                print(f"Erro ao receber dados do cliente: {e}")
+                break
+
             print("PRINT DA REQUEST SENDO FEITA", request)
 
             codigo  = request.split()
             codigo = codigo[0]
 
-            if not request:
-                break
-            elif codigo == "exit" or codigo == "list":
-                if codigo == "exit":  # da erro
+            # Restante do código de processamento de solicitação aqui...
+            
+            if codigo == "exit" or codigo == "list":
+                if codigo == "exit":
                     break
-                elif codigo == "list":  # da erro
+                elif codigo == "list":
                     list_files(conn)
             else:
                 if codigo == "register":
                     json_str = request.split(" ", 1)   
-                    json =  json_str[1]
-                    registrar_usuario(conn, json)
+                    json_data =  json_str[1]
+                    registrar_usuario(conn, json_data)
                 elif codigo == "login":
                     json_str = request.split(" ", 1)   
-                    json =  json_str[1]
-                    login_usuario(conn,json)
+                    json_data =  json_str[1]
+                    login_usuario(conn, json_data)
                 elif codigo == "download":
                     comando, Nome_arquivo, email = request.split(" ", 2)
-                    send_file(conn, Nome_arquivo,email)
+                    send_file(conn, Nome_arquivo, email)
                     conn.close()
                 elif codigo == "upload":
                     comando, Nome_arquivo, email = request.split(" ", 2)
                     print(Nome_arquivo)
                     print(email)
-                    receive_file(conn, Nome_arquivo,email)
+                    receive_file(conn, Nome_arquivo, email)
                 elif codigo == "privar":
                     comando, Nome_arquivo, email = request.split(" ", 2)
-                    priv_file(conn, Nome_arquivo,email)
+                    priv_file(conn, Nome_arquivo, email)
                 elif codigo == "autorizar":
                     comando, Nome_arquivo, email = request.split(" ", 2)
-                    adicionar_permission(conn,Nome_arquivo,email)
-        except ConnectionResetError:
-            print("Conexão fechada pelo cliente.")
-        finally:
-            conn.close()
-            print(f"Conexão encerrada com {addr}")
+                    adicionar_permission(conn, Nome_arquivo, email)
+    except ConnectionResetError:
+        print("Conexão fechada pelo cliente.")
+    finally:
+        conn.close()
+        print(f"Conexão encerrada com {addr}")
 
+
+# Inicia o servidor.
+def start_server(host, port):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((host, port))
+    server.listen(5)
+    print(colored(f"Servidor escutando em {host}:{port}", "grey"))
+
+    while True:
+        conn, addr = server.accept()
+        # Cria uma nova thread para lidar com a conexão
+        threading.Thread(target=handle_client, args=(conn, addr)).start()
 
 if __name__ == "__main__":
-    server()
+    start_server("localhost", 57000)
